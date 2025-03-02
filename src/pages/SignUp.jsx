@@ -16,13 +16,16 @@ function SignUp() {
 
   const handleSignUp = async (e) => {
     e.preventDefault();
+    setError(""); // Clear previous errors
 
     if (createPassword !== confirmPassword) {
       setError("Passwords do not match!");
+      return;
     }
 
     if (!agreeTerms) {
       setError("Please must agree to the terms and conditions!");
+      return;
     }
 
     try {
@@ -81,7 +84,12 @@ function SignUp() {
               className="border border-gray-600 outline-none px-4 py-3 w-[300px] rounded-md"
             />
             <div className="flex gap-3">
-              <input type="checkbox" required />
+              <input
+                type="checkbox"
+                checked={agreeTerms}
+                onChange={(e) => setAgreeTerms(e.target.checked)}
+                required
+              />
               <p>Terms and Condition</p>
             </div>
             {error && <p className="text-red-500 mt-3">{error}</p>}
