@@ -1,103 +1,81 @@
 import React, { useState } from "react";
-import { account } from "../components/appwrite/appwriteConfig";
-import { ID } from "appwrite";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../untils/AuthContext";
+import authService from "../appwrite/auth";
+import { Link, useNavigate } from "react-router-dom";
+import { login } from "../store/authSlice";
+import { useDispatch } from "react-redux";
+import { set, useForm } from "react-hook-form";
 
 function SignUp() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [createPassword, setCreatePassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [agreeTerms, setAgreeTerms] = useState(false);
-  const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { setUser } = useAuth();
+  const [error, setError] = useState("");
+  const dispatch = useDispatch();
+  const { register, handleSubmit } = useForm();
 
-  const handleSignUp = async (e) => {
-    e.preventDefault();
-    setError(""); // Clear previous errors
-
-    if (createPassword !== confirmPassword) {
-      setError("Passwords do not match!");
-      return;
-    }
-
-    if (!agreeTerms) {
-      setError("Please must agree to the terms and conditions!");
-      return;
-    }
-
+  const create = async (data) => {
+    setError("");
     try {
-      const newUser = await account.create(
-        ID.unique(),
-        email,
-        createPassword,
-        name
-      );
-
-      await account.createEmailPasswordSession(email, createPassword);
-      const userData = await account.get();
-      setUser(userData);
-      navigate("/");
+      const session = await authService.createAccount(data);
+      if (session) {
+        const userData = await authService.getCurrentUser();
+        if (userData) dispatch(login(userData));
+        navigate("/");
+      }
     } catch (error) {
       setError(error.message);
     }
   };
 
   return (
-    <div className="h-screen flex items-center justify-center">
-      <div className="border border-gray-600 rounded-lg flex flex-col items-center justify-center p-7 w-[500px]">
-        <h1 className="text-xl mb-5">Sign Up</h1>
-        <form onSubmit={handleSignUp}>
-          <div className="flex flex-col gap-5 mb-7">
+    <div className="flex items-center justify-center w-full">
+      <div
+        className={`mx-auto w-full max-w-lg bg-gray-100 rounded-xl p-10 border border-black/10`}
+      >
+        <div className="mb-2 flex justify-center">
+          <span className="inline-block w-full max-w-[100px]">Logo</span>
+        </div>
+        <h2 className="text-center text-2xl font-bold leading-tight">
+          Sign up to create account
+        </h2>
+        <p>Already have an account?&nbsp;</p>
+        <Link to="/signin">Sign In</Link>
+        {error && <p className="text-red-600 mt-8 text-center">{error}</p>}
+
+        <form onSubmit={handleSubmit(create)}>
+          <div className="space-y-5">
             <input
               type="text"
-              placeholder="Enter Name"
-              name="name"
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="border border-gray-600 outline-none px-4 py-3 w-[300px] rounded-md"
+              placeholder="Enter your name"
+              className="px-3 py-2 rounded-lg bg-white text-black outline-none focus:bg-gray-50 duration-200 border border-gray-200 w-full"
+              {...register("name", {
+                required: "Name is Required",
+              })}
             />
             <input
               type="email"
-              placeholder="Enter Email"
-              name="email"
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="border border-gray-600 outline-none px-4 py-3 w-[300px] rounded-md"
+              placeholder="Enter your email"
+              className="px-3 py-2 rounded-lg bg-white text-black outline-none focus:bg-gray-50 duration-200 border border-gray-200 w-full"
+              {...register("email", {
+                required: "Email is Required",
+                validate: {
+                  matchPattern: (value) =>
+                    /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(value) ||
+                    "Email address must be a valid address",
+                },
+              })}
             />
             <input
               type="password"
-              placeholder="Enter Create Password"
-              name="create_password"
-              onChange={(e) => setCreatePassword(e.target.value)}
-              required
-              className="border border-gray-600 outline-none px-4 py-3 w-[300px] rounded-md"
+              placeholder="Enter your password"
+              className="px-3 py-2 rounded-lg bg-white text-black outline-none focus:bg-gray-50 duration-200 border border-gray-200 w-full"
+              {...register("password", {
+                required: "Password is Required",
+              })}
             />
-            <input
-              type="password"
-              placeholder="Enter Confirm Password"
-              name="confirm_password"
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              className="border border-gray-600 outline-none px-4 py-3 w-[300px] rounded-md"
-            />
-            <div className="flex gap-3">
-              <input
-                type="checkbox"
-                checked={agreeTerms}
-                onChange={(e) => setAgreeTerms(e.target.checked)}
-                required
-              />
-              <p>Terms and Condition</p>
-            </div>
-            {error && <p className="text-red-500 mt-3">{error}</p>}
             <button
               type="submit"
-              className="bg-black text-white rounded-md p-2 m-auto"
+              className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg"
             >
-              Sign Up
+              Create Account
             </button>
           </div>
         </form>

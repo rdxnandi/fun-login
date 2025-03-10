@@ -1,62 +1,82 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../untils/AuthContext";
-import { account } from "../components/appwrite/appwriteConfig";
+import { login as authLogin } from "../store/authSlice";
+import { useDispatch } from "react-redux";
+import authService from "../appwrite/auth";
+import { useForm } from "react-hook-form";
 
 function SignIn() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const navigate = useNavigate();
-  const { setUser } = useAuth();
+  const dispatch = useDispatch();
+  const { register, handleSubmit } = useForm();
+  const [error, setError] = useState("");
 
-  const handleSignIn = async (e) => {
-    e.preventDefault();
+  const signin = async (data) => {
+    setError("");
     try {
-      await account.createEmailPasswordSession(email, password);
-      const userData = await account.get();
-      setUser(userData);
-      navigate("/");
+      const session = await authService.login(data);
+      if (session) {
+        const userData = await authService.getCurrentUser();
+        if (userData) dispatch(authLogin(userData));
+        navigate("/");
+      }
     } catch (error) {
-      // console.log(error);
+      setError(error.message);
     }
   };
 
   return (
-    <div className="h-screen flex items-center justify-center">
-      <div className="border border-gray-600 rounded-lg flex flex-col items-center justify-center p-7 w-[500px]">
-        <h1 className="text-xl mb-5">Sign In</h1>
-        <form onSubmit={handleSignIn}>
-          <div className="flex flex-col gap-5 mb-7">
+    <div className="flex items-center justify-center w-full">
+      <div
+        className={`mx-auto w-full maz-w-lg bg-gray-100 rounded-xl p-10 border border-black/10`}
+      >
+        <div className="mb-2 flex justify-center">
+          <span className="inline-block w-full max-w-[100px]">Logo</span>
+        </div>
+        <h2 className="text-center text-2xl font-bold leading-tight">
+          Sign in to your account
+        </h2>
+        <p className="mt-2 text-center text-base text-black/60">
+          Don&apos;t have an account?&nbsp;
+          <Link
+            to="/signup"
+            className="font-medium text-primary transition-all duration-200 hover:underline"
+          >
+            Sign Up
+          </Link>
+        </p>
+        {error && <p className="text-red-500 text-center">{error}</p>}
+        <form onSubmit={handleSubmit(signin)} className="mt-8">
+          <div className="space-y-5">
             <input
               type="email"
-              name="email"
-              placeholder="Enter Email"
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="border border-gray-600 outline-none px-4 py-3 w-[300px] rounded-md"
+              placeholder="Enter your email"
+              className="px-3 py-2 rounded-lg bg-white text-black outline-none focus:bg-gray-50 duration-200 border border-gray-200 w-full"
+              {...register("email", {
+                required: "Email is Required",
+                validate: {
+                  matchPattern: (value) =>
+                    /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(value) ||
+                    "Email address must be a valid address",
+                },
+              })}
             />
             <input
               type="password"
-              name="password"
-              placeholder="Enter Password"
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="border border-gray-600 outline-none px-4 py-3 w-[300px] rounded-md"
+              placeholder="Enter your password"
+              className="px-3 py-2 rounded-lg bg-white text-black outline-none focus:bg-gray-50 duration-200 border border-gray-200 w-full"
+              {...register("password", {
+                required: "Password is Required",
+              })}
             />
             <button
               type="submit"
-              className="bg-black text-white rounded-md p-2 m-auto"
+              className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg"
             >
-              Sign In
+              Sign in
             </button>
           </div>
         </form>
-        <p className="text-xl">
-          Don't account?{" "}
-          <Link to="/signup" className="font-semibold">
-            Signup
-          </Link>
-        </p>
       </div>
     </div>
   );
